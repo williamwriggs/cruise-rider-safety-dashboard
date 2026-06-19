@@ -6,10 +6,10 @@ import streamlit as st
 
 DATA_URL = "https://raw.githubusercontent.com/williamwriggs/rideshare-safety-rider-analysis/main/data/research_rider_dataset.csv"
 
-SF_LAT_MIN = 37.60
-SF_LAT_MAX = 37.90
-SF_LON_MIN = -122.55
-SF_LON_MAX = -122.30
+SF_LAT_MIN = 37.70
+SF_LAT_MAX = 37.84
+SF_LON_MIN = -122.53
+SF_LON_MAX = -122.34
 
 st.set_page_config(page_title="Cruise Rider Safety Dashboard", layout="wide")
 
@@ -48,12 +48,7 @@ def bar_count(data: pd.DataFrame, column: str, title: str, color: str | None = N
 
 
 def mean_value_chart(data: pd.DataFrame):
-    value_cols = [
-        "Zero_Emission_Score",
-        "Accessibility_Score",
-        "Distribution_Score",
-        "Transit_Connectivity_Score",
-    ]
+    value_cols = ["Zero_Emission_Score", "Accessibility_Score", "Distribution_Score", "Transit_Connectivity_Score"]
     rows = []
     for col in value_cols:
         if col in data.columns:
@@ -80,11 +75,8 @@ st.title("Cruise Rider Safety Dashboard")
 st.caption("Companion dashboard for: Advances in Automated Driving: Perceptions of Safety, Operations, and Comfort From Riders")
 
 with st.expander("Data note", expanded=True):
-    st.write(
-        "This app uses the same public-safe Cruise research rider dataset developed for the paper workflow. "
-        "Riders are mapped using dropoff coordinates; non-riders are mapped using survey-location coordinates. "
-        "Raw survey files are not stored in this repository."
-    )
+    st.write("This app uses the public-safe Cruise research rider dataset developed for the paper workflow.")
+    st.write("Rider records use dropoff coordinates; non-rider records use survey-location coordinates.")
     st.write(f"Data source: `{DATA_URL}`")
 
 try:
