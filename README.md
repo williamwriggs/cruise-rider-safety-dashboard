@@ -8,9 +8,9 @@ This repository contains a Cruise-only public-safe dashboard derived from an ano
 
 ## Live App
 
-Planned Streamlit URL:
+Streamlit URL:
 
-`https://cruise-rider-safety.streamlit.app/`
+https://cruise-rider-safety.streamlit.app/
 
 ## Purpose
 
