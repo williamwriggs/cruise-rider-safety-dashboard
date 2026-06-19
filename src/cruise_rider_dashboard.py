@@ -6,6 +6,11 @@ import streamlit as st
 
 DATA_URL = "https://raw.githubusercontent.com/williamwriggs/rideshare-safety-rider-analysis/main/data/research_rider_dataset.csv"
 
+SF_LAT_MIN = 37.60
+SF_LAT_MAX = 37.90
+SF_LON_MIN = -122.55
+SF_LON_MAX = -122.30
+
 st.set_page_config(page_title="Cruise Rider Safety Dashboard", layout="wide")
 
 
@@ -62,6 +67,15 @@ def mean_value_chart(data: pd.DataFrame):
         st.plotly_chart(fig, use_container_width=True)
 
 
+def filter_sf_service_area(data: pd.DataFrame) -> pd.DataFrame:
+    return data[
+        (data["Latitude"] >= SF_LAT_MIN)
+        & (data["Latitude"] <= SF_LAT_MAX)
+        & (data["Longitude"] >= SF_LON_MIN)
+        & (data["Longitude"] <= SF_LON_MAX)
+    ]
+
+
 st.title("Cruise Rider Safety Dashboard")
 st.caption("Companion dashboard for: Advances in Automated Driving: Perceptions of Safety, Operations, and Comfort From Riders")
 
@@ -89,6 +103,7 @@ with st.sidebar:
     selected_respondents = st.multiselect("Respondent group", respondent_options, default=respondent_options)
     selected_scenarios = st.multiselect("Scenario", scenario_options, default=scenario_options)
     selected_sentiments = st.multiselect("Sentiment", sentiment_options, default=sentiment_options)
+    focus_sf = st.checkbox("Focus on San Francisco service area", value=True)
 
 filtered_df = df.copy()
 if selected_respondents:
@@ -107,7 +122,24 @@ metric_cols[4].metric("Avg sentiment", f"{filtered_df['Sentiment Score'].mean():
 
 st.subheader("Respondent geography")
 map_df = filtered_df[["Latitude", "Longitude", "Respondent_Group", "Scenario", "Sentiment"]].dropna()
-st.map(map_df.rename(columns={"Latitude": "lat", "Longitude": "lon"}), latitude="lat", longitude="lon", use_container_width=True)
+all_map_records = len(map_df)
+if focus_sf:
+    map_df = filter_sf_service_area(map_df)
+    excluded_count = all_map_records - len(map_df)
+    if excluded_count > 0:
+        st.caption(
+            "The default view focuses on the San Francisco Cruise operating area. "
+            "One eligible University of San Francisco Research Rider participant completed the survey while outside the operating design domain (ODD). "
+            "That response remains in the dataset and can be viewed by unchecking 'Focus on San Francisco service area,' "
+            "but is excluded from the default San Francisco-focused visualization."
+        )
+else:
+    st.caption("Showing all respondent coordinates, including responses completed outside the San Francisco operating design domain (ODD).")
+
+if map_df.empty:
+    st.info("No respondent coordinates match the current map filter.")
+else:
+    st.map(map_df.rename(columns={"Latitude": "lat", "Longitude": "lon"}), latitude="lat", longitude="lon", zoom=11 if focus_sf else None, use_container_width=True)
 
 chart_cols = st.columns(2)
 with chart_cols[0]:
