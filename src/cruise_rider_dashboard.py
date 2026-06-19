@@ -6,10 +6,10 @@ import streamlit as st
 
 DATA_URL = "https://raw.githubusercontent.com/williamwriggs/rideshare-safety-rider-analysis/main/data/research_rider_dataset.csv"
 
-SF_LAT_MIN = 37.70
-SF_LAT_MAX = 37.84
-SF_LON_MIN = -122.53
-SF_LON_MAX = -122.34
+SF_LAT_MIN = 37.705
+SF_LAT_MAX = 37.825
+SF_LON_MIN = -122.515
+SF_LON_MAX = -122.355
 
 st.set_page_config(page_title="Cruise Rider Safety Dashboard", layout="wide")
 
