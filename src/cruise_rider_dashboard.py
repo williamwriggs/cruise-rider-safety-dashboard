@@ -34,6 +34,41 @@ def count_table(data: pd.DataFrame, column: str, label: str) -> pd.DataFrame:
     return table
 
 
+def comparison_table(data: pd.DataFrame, column: str, label: str) -> pd.DataFrame:
+    if data.empty or column not in data.columns or "Respondent_Group" not in data.columns:
+        return pd.DataFrame()
+    working = data[["Respondent_Group", column]].copy()
+    working[column] = working[column].fillna("Missing").replace("", "Missing")
+    counts = working.groupby([column, "Respondent_Group"]).size().reset_index(name="Count")
+    totals = working.groupby("Respondent_Group").size().rename("Group Total").reset_index()
+    counts = counts.merge(totals, on="Respondent_Group", how="left")
+    counts["Percent"] = (counts["Count"] / counts["Group Total"] * 100).round(1)
+    pivot = counts.pivot(index=column, columns="Respondent_Group", values=["Count", "Percent"]).fillna(0)
+    pivot.columns = [f"{group} {metric}" for metric, group in pivot.columns]
+    return pivot.reset_index().rename(columns={column: label})
+
+
+def value_comparison_table(data: pd.DataFrame) -> pd.DataFrame:
+    value_cols = {
+        "Zero_Emission_Score": "Zero emission vehicles",
+        "Accessibility_Score": "Accessibility",
+        "Distribution_Score": "Service distribution",
+        "Transit_Connectivity_Score": "Transit connectivity",
+    }
+    rows = []
+    if "Respondent_Group" not in data.columns:
+        return pd.DataFrame()
+    for col, label in value_cols.items():
+        if col in data.columns:
+            grouped = data.groupby("Respondent_Group")[col].apply(lambda s: pd.to_numeric(s, errors="coerce").mean())
+            rows.append({
+                "Value priority": label,
+                "Rider mean": round(grouped.get("Rider", float("nan")), 2) if pd.notna(grouped.get("Rider", float("nan"))) else None,
+                "Non-rider mean": round(grouped.get("Non-rider", float("nan")), 2) if pd.notna(grouped.get("Non-rider", float("nan"))) else None,
+            })
+    return pd.DataFrame(rows)
+
+
 def bar_count(data: pd.DataFrame, column: str, title: str, color: str | None = None):
     if data.empty or column not in data.columns:
         st.info("No records available for this view.")
@@ -161,6 +196,32 @@ with survey_cols[1]:
     bar_count(filtered_df, "Views_Changed", "Views changed after participation", "Respondent_Group")
 
 mean_value_chart(filtered_df)
+
+st.subheader("Rider vs. Non-rider comparison")
+st.caption("These tables compare riders and non-riders within the currently selected filters.")
+comparison_tabs = st.tabs([
+    "Scenario",
+    "Sentiment",
+    "Trip purpose",
+    "Alternative mode",
+    "Late-night travel",
+    "Views changed",
+    "Value scores",
+])
+with comparison_tabs[0]:
+    st.dataframe(comparison_table(filtered_df, "Scenario", "Scenario"), use_container_width=True, hide_index=True)
+with comparison_tabs[1]:
+    st.dataframe(comparison_table(filtered_df, "Sentiment", "Sentiment"), use_container_width=True, hide_index=True)
+with comparison_tabs[2]:
+    st.dataframe(comparison_table(filtered_df, "Trip_Purpose", "Trip purpose"), use_container_width=True, hide_index=True)
+with comparison_tabs[3]:
+    st.dataframe(comparison_table(filtered_df, "Alternative_Mode", "Alternative mode"), use_container_width=True, hide_index=True)
+with comparison_tabs[4]:
+    st.dataframe(comparison_table(filtered_df, "Late_Night_Travel_Change", "Late-night travel change"), use_container_width=True, hide_index=True)
+with comparison_tabs[5]:
+    st.dataframe(comparison_table(filtered_df, "Views_Changed", "Views changed"), use_container_width=True, hide_index=True)
+with comparison_tabs[6]:
+    st.dataframe(value_comparison_table(filtered_df), use_container_width=True, hide_index=True)
 
 st.subheader("Filtered public-safe records")
 st.dataframe(filtered_df, use_container_width=True)
