@@ -5,6 +5,7 @@ import plotly.express as px
 import streamlit as st
 
 DATA_URL = "https://raw.githubusercontent.com/williamwriggs/rideshare-safety-rider-analysis/main/data/research_rider_dataset.csv"
+EXCLUDED_RECORD_IDS = {"RR-0002", "RR-0022", "RR-0023", "RR-0024", "RR-0025", "RR-0026"}
 
 SF_LAT_MIN = 37.705
 SF_LAT_MAX = 37.825
@@ -19,6 +20,8 @@ def load_data() -> pd.DataFrame:
     df = pd.read_csv(DATA_URL)
     df.columns = [col.strip() for col in df.columns]
     df = df[df["Service"].astype(str).str.lower() == "cruise"].copy()
+    if "record_id" in df.columns:
+        df = df[~df["record_id"].isin(EXCLUDED_RECORD_IDS)].copy()
     df["Latitude"] = pd.to_numeric(df["Latitude"], errors="coerce")
     df["Longitude"] = pd.to_numeric(df["Longitude"], errors="coerce")
     if "Sentiment Score" in df.columns:
@@ -77,12 +80,7 @@ def mean_value_chart(data: pd.DataFrame):
 
 
 def filter_sf_service_area(data: pd.DataFrame) -> pd.DataFrame:
-    return data[
-        (data["Latitude"] >= SF_LAT_MIN)
-        & (data["Latitude"] <= SF_LAT_MAX)
-        & (data["Longitude"] >= SF_LON_MIN)
-        & (data["Longitude"] <= SF_LON_MAX)
-    ]
+    return data[(data["Latitude"] >= SF_LAT_MIN) & (data["Latitude"] <= SF_LAT_MAX) & (data["Longitude"] >= SF_LON_MIN) & (data["Longitude"] <= SF_LON_MAX)]
 
 
 st.title("Cruise Rider Safety Dashboard")
@@ -90,6 +88,7 @@ st.caption("Companion dashboard for: Advances in Automated Driving: Perceptions 
 
 with st.expander("Data note", expanded=True):
     st.write("This app uses the public-safe Cruise research rider dataset developed for the paper workflow.")
+    st.write("The audited analytical sample contains 23 riders and 140 non-riders. Test records and one author response are excluded.")
     st.write("Rider records use dropoff coordinates; non-rider records use survey-location coordinates.")
     st.write(f"Data source: `{DATA_URL}`")
 
@@ -105,7 +104,6 @@ with st.sidebar:
     respondent_options = sorted(df["Respondent_Group"].dropna().unique()) if "Respondent_Group" in df.columns else []
     scenario_options = sorted(df["Scenario"].dropna().unique()) if "Scenario" in df.columns else []
     sentiment_options = sorted(df["Sentiment"].dropna().unique()) if "Sentiment" in df.columns else []
-
     selected_respondents = st.multiselect("Respondent group", respondent_options, default=respondent_options)
     selected_scenarios = st.multiselect("Scenario", scenario_options, default=scenario_options)
     selected_sentiments = st.multiselect("Sentiment", sentiment_options, default=sentiment_options)
@@ -133,12 +131,7 @@ if focus_sf:
     map_df = filter_sf_service_area(map_df)
     excluded_count = all_map_records - len(map_df)
     if excluded_count > 0:
-        st.caption(
-            "The default view focuses on the San Francisco Cruise operating area. "
-            "One eligible University of San Francisco Research Rider participant completed the survey while outside the operating design domain (ODD). "
-            "That response remains in the dataset and can be viewed by unchecking 'Focus on San Francisco service area,' "
-            "but is excluded from the default San Francisco-focused visualization."
-        )
+        st.caption("The default view focuses on the San Francisco Cruise operating area. Eligible respondents who completed the survey outside the operating design domain remain in the audited dataset but are excluded from this default map view.")
 else:
     st.caption("Showing all respondent coordinates, including responses completed outside the San Francisco operating design domain (ODD).")
 
@@ -156,7 +149,7 @@ with chart_cols[1]:
 if "Respondent_Group" in filtered_df.columns:
     rider_only_df = filtered_df[filtered_df["Respondent_Group"] == "Rider"]
     st.subheader("Rider-only breakdown")
-    st.caption("Only respondents who completed a Cruise research ride are included in this section.")
+    st.caption("Only the 23 respondents who completed a Cruise research ride are included in this section.")
     table_cols = st.columns(2)
     with table_cols[0]:
         st.markdown("**Rider scenario mentions**")
