@@ -6,6 +6,7 @@ import streamlit as st
 
 DATA_URL = "https://raw.githubusercontent.com/williamwriggs/rideshare-safety-rider-analysis/main/data/research_rider_dataset.csv"
 EXCLUDED_RECORD_IDS = {"RR-0002", "RR-0022", "RR-0023", "RR-0024", "RR-0025", "RR-0026"}
+PRIVATE_DEMOGRAPHIC_COLUMNS = {"Birth Year", "Age in 2022", "Home ZIP Code"}
 
 SF_LAT_MIN = 37.705
 SF_LAT_MAX = 37.825
@@ -19,6 +20,7 @@ st.set_page_config(page_title="Cruise Rider Safety Dashboard", layout="wide")
 def load_data() -> pd.DataFrame:
     df = pd.read_csv(DATA_URL)
     df.columns = [col.strip() for col in df.columns]
+    df = df.drop(columns=PRIVATE_DEMOGRAPHIC_COLUMNS, errors="ignore")
     df = df[df["Service"].astype(str).str.lower() == "cruise"].copy()
     if "record_id" in df.columns:
         df = df[~df["record_id"].isin(EXCLUDED_RECORD_IDS)].copy()
