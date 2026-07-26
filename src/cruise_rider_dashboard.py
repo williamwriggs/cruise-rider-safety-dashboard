@@ -6,6 +6,25 @@ import streamlit as st
 
 DATA_URL = "https://raw.githubusercontent.com/williamwriggs/rideshare-safety-rider-analysis/main/data/research_rider_dataset.csv"
 EXCLUDED_RECORD_IDS = {"RR-0002", "RR-0022", "RR-0023", "RR-0024", "RR-0025", "RR-0026"}
+PRIVATE_DEMOGRAPHIC_COLUMNS = {"Birth Year", "Age in 2022", "Home ZIP Code"}
+
+CODED_THEMATIC_REFERENCES = pd.DataFrame(
+    [
+        {"Theme": "Vehicle Behavior", "Coded References": 14, "Percent": 37.8},
+        {"Theme": "Incident Response", "Coded References": 10, "Percent": 27.0},
+        {"Theme": "Emotional Comfort", "Coded References": 8, "Percent": 21.6},
+        {"Theme": "Nighttime Safety", "Coded References": 5, "Percent": 13.5},
+    ]
+)
+
+DIRECT_INDIRECT_REFERENCES = pd.DataFrame(
+    [
+        {"Theme": "Vehicle Behavior", "Direct": 9, "Indirect": 5, "WCS": 23},
+        {"Theme": "Incident Response", "Direct": 7, "Indirect": 3, "WCS": 17},
+        {"Theme": "Emotional Comfort", "Direct": 4, "Indirect": 4, "WCS": 12},
+        {"Theme": "Nighttime Safety", "Direct": 3, "Indirect": 2, "WCS": 8},
+    ]
+)
 
 SF_LAT_MIN = 37.705
 SF_LAT_MAX = 37.825
@@ -19,6 +38,7 @@ st.set_page_config(page_title="Cruise Rider Safety Dashboard", layout="wide")
 def load_data() -> pd.DataFrame:
     df = pd.read_csv(DATA_URL)
     df.columns = [col.strip() for col in df.columns]
+    df = df.drop(columns=PRIVATE_DEMOGRAPHIC_COLUMNS, errors="ignore")
     df = df[df["Service"].astype(str).str.lower() == "cruise"].copy()
     if "record_id" in df.columns:
         df = df[~df["record_id"].isin(EXCLUDED_RECORD_IDS)].copy()
@@ -146,17 +166,16 @@ with chart_cols[0]:
 with chart_cols[1]:
     bar_count(filtered_df, "Sentiment", "Sentiment distribution", "Respondent_Group")
 
-if "Respondent_Group" in filtered_df.columns:
-    rider_only_df = filtered_df[filtered_df["Respondent_Group"] == "Rider"]
-    st.subheader("Rider-only breakdown")
-    st.caption("Only the 23 respondents who completed a Cruise research ride are included in this section.")
-    table_cols = st.columns(2)
-    with table_cols[0]:
-        st.markdown("**Rider scenario mentions**")
-        st.dataframe(count_table(rider_only_df, "Scenario", "Scenario"), use_container_width=True, hide_index=True)
-    with table_cols[1]:
-        st.markdown("**Rider sentiment distribution**")
-        st.dataframe(count_table(rider_only_df, "Sentiment", "Sentiment"), use_container_width=True, hide_index=True)
+st.subheader("Rider thematic coding")
+st.caption("The paper reports 37 multi-label coded thematic references from rider narratives. Direct and indirect references are subsets of those 37 references.")
+st.info("These counts cannot be reproduced from the public database. Its scenario classifications are mutually exclusive record-level categories developed for dashboard visualization and are analytically distinct from the multi-label qualitative coding reported in the paper.")
+table_cols = st.columns(2)
+with table_cols[0]:
+    st.markdown("**Distribution of coded rider references by theme**")
+    st.dataframe(CODED_THEMATIC_REFERENCES, use_container_width=True, hide_index=True)
+with table_cols[1]:
+    st.markdown("**Direct and indirect concern references by theme**")
+    st.dataframe(DIRECT_INDIRECT_REFERENCES, use_container_width=True, hide_index=True)
 
 st.subheader("Survey views")
 survey_cols = st.columns(2)
