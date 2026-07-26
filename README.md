@@ -47,14 +47,9 @@ The direct and indirect references reported in the paper are subsets of the 37 c
 
 ```text
 .
-├── data/
-│   └── README.md
-├── docs/
-│   ├── data_dictionary.md
-│   ├── deployment.md
-│   └── paper_context.md
 ├── src/
 │   └── cruise_rider_dashboard.py
+├── LICENSE
 ├── README.md
 └── requirements.txt
 ```
